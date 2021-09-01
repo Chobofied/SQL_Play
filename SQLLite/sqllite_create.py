@@ -5,142 +5,120 @@ import SQL_Querie
 import sqlite3
 from sqlite3 import Error
 
-def create_connection(path):
-    connection = None
+class sqllite_db():
+
+  #Establishes a connection to the SQLite DB
+  def __init__(self,path):
+    self.connection = None
     try:
-        connection = sqlite3.connect(path)
+        self.connection = sqlite3.connect(path)
+        self.cursor = self.connection.cursor()
         print("Connection to SQLite DB successful")
     except Error as e:
         print(f"The error '{e}' occurred")
-
-    return connection
-
-def execute_query(connection, query):
-    cursor = connection.cursor()
+  
+  # Posts data to the Database
+  def execute_query(self, query):
     try:
-        cursor.execute(query)
-        connection.commit()
+        self.cursor.execute(query)
+        self.connection.commit()
         print("Query executed successfully")
     except Error as e:
         print(f"The error '{e}' occurred")
 
-def execute_read_query(connection, query):
-    cursor = connection.cursor()
+  # Reads (Fetches) Data from the database
+  def execute_read_query(self, query):
     result = None
     try:
-        cursor.execute(query)
-        result = cursor.fetchall()
+        self.cursor.execute(query)
+        result = self.cursor.fetchall()
         return result
     except Error as e:
         print(f"The error '{e}' occurred")
 
 
 
-def main_routine():
-  ##Call from Shell Command
-  #python
-  #from sqllite_create import main_routine
-  #main_routine
+def example_routine():
+  '''
+  Example Routine that creates an SQLlite Database, 
+  posts, reads, appends, deletes data with user inputs allowed
+  
+  Call from Shell Command below
+  python
+  from sqllite_create import example_routine
+  example_routine
+  '''
+ 
   path="C://Users//Taylo//OneDrive//Python//Functions//SQL//SQLLite//sqllite_test.db"
 
-  ## CREATES Connection / Empty Database
-  connection=create_connection(path)
+  #Creates an instance of the SQLlite Database
+  test_sql=sqllite_db(path)
 
-  ## Connects to Database and Creates a Table if it does not exist (User)
+  #Creates lists of the Tables and Data to added to the SQLlite Database
+  Tables=(SQL_Querie.Create.create_users_table,
+          SQL_Querie.Create.create_posts_table,
+          SQL_Querie.Create.create_comments_table,
+          SQL_Querie.Create.create_likes_table)
+
+  Tables_Data=(SQL_Querie.Create.create_users,
+              SQL_Querie.Create.create_posts,
+              SQL_Querie.Create.create_comments,
+              SQL_Querie.Create.create_likes)
+
+  #Creates the Tables and fills them with data
+  for Table in Tables:
+    test_sql.execute_query(Table)
+
+  for Table_Data in Tables_Data:
+    test_sql.execute_query(Table_Data)
 
 
-  #SQL_Querie.Create.create_users_table
-  execute_query(connection, SQL_Querie.Create.create_users_table)
-  
-def Create_Tables():
-  execute_query(connection, SQL_Querie.Create.create_users_table)
-  execute_query(connection, SQL_Querie.Create.create_posts_table) 
-  execute_query(connection, SQL_Querie.Create.create_comments_table)  
-  execute_query(connection, SQL_Querie.Create.create_likes_table) 
+  #Reads Specific Data from the Database and printes them
+  results=test_sql.execute_read_query(SQL_Querie.Select.select_users_posts)
 
-def Fill_Tables():
-  execute_query(connection, SQL_Querie.Create.create_users)
-  execute_query(connection, SQL_Querie.Create.create_posts)
-  execute_query(connection, SQL_Querie.Create.create_comments)
-  execute_query(connection, SQL_Querie.Create.create_likes)  
-
-def Show_Data(Data):
-  Results=execute_read_query(connection, Data)
-
-  for result in Results:
+  for result in results:
         print(result)
+
+
+  #Inserts Records Into Table (User)
+  User_Append = """
+  INSERT INTO
+    users (name, age, gender, nationality)
+  VALUES
+    ('Taylor', 30, 'male', 'USA');
+  """
+
+  test_sql.execute_query(User_Append)
+  #test_sql.execute_query(SQL_Querie.Create.create_users_table)
+
+
+  #User Input Data, SQL injection protection
+
+  # See https://docs.python.org/3/library/sqlite3.html
+  # Set up for users to input data
+
+  The_Name='RealSlimShady'
+  test_sql.cursor.execute("INSERT INTO users (name, age, gender, nationality) VALUES (?,?,?,?)",(The_Name, 21, "female", "Canada"))
+  test_sql.connection.commit()
+
+  #Delete Example
+  delete_comment = "DELETE FROM users WHERE id = 5"
+  test_sql.execute_query(delete_comment)
+
+  delete_comment = "DELETE FROM users WHERE name = 'Taylor'"
+  test_sql.execute_query(delete_comment)
+
+  #User Delete Example
+
+  Delete_Name='Brigitte'
+  test_sql.cursor.execute("DELETE FROM users WHERE name = (?)",(Delete_Name,))
+  test_sql.connection.commit()
 
 
 if __name__ == '__main__':
 
-    main_routine()
-    path="C://Users//Taylo//OneDrive//Python//Functions//SQL//SQLLite//sqllite_test.db"
-
-    ## CREATES Connection / Empty Database
-    connection=create_connection(path)
-
-    ## Connects to Database and Creates a Table if it does not exist (User)
-
-
-    #SQL_Querie.Create.create_users_table
-    Create_Tables()
-    Fill_Tables()
-    Show_Data(SQL_Querie.Select.select_users_posts)
-
-    """
-    execute_query(connection, SQL_Querie.Create.create_users_table)
-    execute_query(connection, SQL_Querie.Create.create_posts_table) 
-    execute_query(connection, SQL_Querie.Create.create_comments_table)  
-    execute_query(connection, SQL_Querie.Create.create_likes_table)  
+    example_routine()
     
-    
-    """
-  
-
-    ## Inserts Records Into Table (User)
-
-
-    User_Append = """
-    INSERT INTO
-      users (name, age, gender, nationality)
-    VALUES
-      ('Taylor', 30, 'male', 'USA');
-    """
-
-
-
-    execute_query(connection, User_Append)
-
-
-
-
-
-
-
-    ## See https://docs.python.org/3/library/sqlite3.html
-    # Set up for users to input data
-
-    The_Name='RealSlimShady'
-
-    cursor = connection.cursor()
-    cursor.execute("INSERT INTO users (name, age, gender, nationality) VALUES (?,?,?,?)",(The_Name, 21, "female", "Canada"))
-    connection.commit()
-    #execute_query(connection, create_users)
-
-    #Delete Example
-    delete_comment = "DELETE FROM users WHERE id = 5"
-    execute_query(connection, delete_comment)
-
-    delete_comment = "DELETE FROM users WHERE name = 'Taylor'"
-    execute_query(connection, delete_comment)
-
-
-    #User Delete Example
-
-    Delete_Name='Brigitte'
-    cursor.execute("DELETE FROM users WHERE name = (?)",(Delete_Name,))
-    connection.commit()
-
 
 
 
