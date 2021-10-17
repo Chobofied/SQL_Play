@@ -1,13 +1,20 @@
 import mysql.connector
 from mysql.connector import Error
+import os
 
-def create_connection(host_name, user_name, user_password):
+
+from dotenv import load_dotenv
+load_dotenv()
+
+MYSQL_PASSWORD=os.environ.get('MYSQL_PASSWORD')
+
+def create_connection(host_name, user_name, MYSQL_PASSWORD):
     connection = None
     try:
         connection = mysql.connector.connect(
             host=host_name,
             user=user_name,
-            passwd=user_password
+            passwd=MYSQL_PASSWORD
         )
         print("Connection to MySQL DB successful")
     except Error as e:
@@ -15,7 +22,7 @@ def create_connection(host_name, user_name, user_password):
 
     return connection
 
-connection = create_connection("localhost", "root", "1Gloomy10")
+connection = create_connection("localhost", "root", MYSQL_PASSWORD)
 
 def create_database(connection, query):
     cursor = connection.cursor()
@@ -43,7 +50,7 @@ def create_connection(host_name, user_name, user_password, db_name):
 
     return connection
 
-connection = create_connection("localhost", "root", "1Gloomy10", "sm_app")
+connection = create_connection("localhost", "root", MYSQL_PASSWORD, "sm_app")
 
 ### INSERTING TABLES
 
