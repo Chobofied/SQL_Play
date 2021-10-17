@@ -1,0 +1,1 @@
+https://stackoverflow.com/questions/10892689/cant-connect-to-mysql-server-on-localhost-10061-after-installation
