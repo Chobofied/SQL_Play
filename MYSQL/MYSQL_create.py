@@ -97,13 +97,10 @@ VALUES
 
 create_persons = """
 INSERT INTO
-  `persons` (`name`, `age`, `gender`, `nationality`)
+  `persons` (`ID`, `LastName`, `FirstName`, `Age`)
 VALUES
-  ('James', 101, 'male', 'USA'),
-  ('Leila', 32, 'female', 'France'),
-  ('Brigitte', 35, 'female', 'England'),
-  ('Mike', 40, 'male', 'Denmark'),
-  ('Elizabeth', 21, 'female', 'Canada');
+  (1, 'Taylor', 'Joe', 31),
+  (2, 'Taylor2', 'Joe', 33);
 """
 
 test_MYSQL.execute_query(create_users)
