@@ -48,6 +48,11 @@ class MYSQL_db():
     except Error as e:
         print(f"The error '{e}' occurred")
 
+  def user_entry(self, insert_stmt,data):
+      self.cursor.execute(insert_stmt, data)
+      self.connection.commit()
+      x=4
+
 
 
 ### EXAMPLE CONNECTION AND SELECTING DATA
@@ -103,6 +108,8 @@ VALUES
   (2, 'Taylor2', 'Joe', 33);
 """
 
+#"INSERT INTO `persons` (`ID`, `LastName`, `FirstName`,`Age`) VALUES (3, 'Taylor23', 'Joe3', 34)"
+
 test_MYSQL.execute_query(create_users)
 test_MYSQL.execute_query(create_persons)
 
@@ -116,4 +123,21 @@ users = test_MYSQL.execute_read_query(select_users)
 for user in users:
     print(user)
 
+## DELETE RECORD
+
+Delete_Person="""
+ DELETE FROM persons 
+ WHERE LastName in ('Taylor2')"""
+
+test_MYSQL.execute_query(Delete_Person)
+
 x=5
+
+## SAFE ENTRY
+
+insert_stmt = (
+  "INSERT INTO `persons` (`ID`, `LastName`, `FirstName`,`Age`) "
+  "VALUES (%s, %s, %s, %s)"
+)
+data = (3, 'Taylor23', 'Joe3', 34)
+test_MYSQL.user_entry(insert_stmt, data)
