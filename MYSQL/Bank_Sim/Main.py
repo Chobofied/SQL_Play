@@ -23,6 +23,7 @@ class MYSQL_db():
             passwd=MYSQL_PASSWORD,
             database=db_name
         )
+        self.cursor = self.connection.cursor()
         print("Connection to MySQL DB successful")
     except Error as e:
         print(f"The error '{e}' occurred")
@@ -52,19 +53,35 @@ class MYSQL_db():
       self.cursor.execute(insert_stmt, data)
       self.connection.commit()
       x=4
-
-
+  
 
 ### EXAMPLE CONNECTION AND SELECTING DATA
 
 # Get Environmental variables
 MYSQL_PASSWORD=os.environ.get('MYSQL_PASSWORD')
-test_MYSQL=MYSQL_db("localhost", "root", MYSQL_PASSWORD,"sm_app")
+test_MYSQL=MYSQL_db("localhost", "root", MYSQL_PASSWORD,"Bank_Sim")
+
 
 ## MAKE A TABLE EXAMPLE
 
+## HAVE TO WORK ON CREATING NEW TABLES FOR NEW ACCOUNTS, NOT QUITE SURE HOW TO DO THAT YET, %s sends a '' text, so it doesnt work all teh way
+
+## HAVE STATIC TABLE NAME SUCH AS "ACCOUNT_***", and *** IS SOMETHING LIKE .FORMAT ACCOUNT NUMBER TAKEN FROM THE PRIMARY TABLE WITH ACCOUNT NUMBERS
+
+
+create_users_table1 = """
+CREATE TABLE IF NOT EXISTS users2 (
+  id INT AUTO_INCREMENT, 
+  name TEXT NOT NULL, 
+  age INT, 
+  gender TEXT, 
+  nationality TEXT,
+  PRIMARY KEY (id)
+) ENGINE = InnoDB
+"""
+
 create_users_table = """
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS %s (
   id INT AUTO_INCREMENT, 
   name TEXT NOT NULL, 
   age INT, 
@@ -81,8 +98,12 @@ create_persons_table="""CREATE TABLE IF NOT EXISTS Persons (
     Age int,
     UNIQUE (LastName)
 );"""
+Test_Account='Test_Account'
+data = [Test_Account]
 
-test_MYSQL.execute_query(create_users_table)
+test_MYSQL.execute_query(create_users_table1)
+
+test_MYSQL.user_entry(create_users_table,data)
 test_MYSQL.execute_query(create_persons_table)
 
 ## INSERTING RECORDS EXAMPLE
@@ -110,7 +131,9 @@ VALUES
 
 #"INSERT INTO `persons` (`ID`, `LastName`, `FirstName`,`Age`) VALUES (3, 'Taylor23', 'Joe3', 34)"
 
-test_MYSQL.execute_query(create_users)
+#test_MYSQL.user_entry(create_users)
+
+
 test_MYSQL.execute_query(create_persons)
 
 
