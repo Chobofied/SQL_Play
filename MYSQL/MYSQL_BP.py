@@ -53,6 +53,8 @@ class MYSQL_db():
       x=4
   
 
+
+
 ### EXAMPLE CONNECTION AND SELECTING DATA
 if __name__ == '__main__':
 
@@ -82,8 +84,32 @@ if __name__ == '__main__':
       UNIQUE (LastName)
   );"""
 
+  create_accounts_table="""
+  CREATE TABLE IF NOT EXISTS Accounts (
+    Acc_ID INT AUTO_INCREMENT,
+    Name varchar(255) NOT NULL,
+    Adress varchar(255),
+    PRIMARY KEY (Acc_ID)
+); """
+
+  create_transaction_table="""
+  CREATE TABLE IF NOT EXISTS Transactions (
+  Trans_ID INT AUTO_INCREMENT,
+  Acc_ID INT NOT NULL,
+  TimeStamp varchar(255) NOT NULL,
+  Changes INT,
+  Comment TEXT,
+  PRIMARY KEY (Trans_ID),
+  FOREIGN KEY (Acc_ID) REFERENCES Accounts(Acc_ID)
+);
+  """
+
+
   test_MYSQL.execute_query(create_users_table)
   test_MYSQL.execute_query(create_persons_table)
+
+  test_MYSQL.execute_query(create_accounts_table)
+  test_MYSQL.execute_query(create_transaction_table)
 
   ## INSERTING RECORDS EXAMPLE
 
@@ -100,7 +126,32 @@ if __name__ == '__main__':
 
   """
 
-  #There is a Unique last name, so if a duplicate last name appears, it ignores it and chucks on
+
+
+  create_Accounts = """
+  INSERT INTO
+    `Accounts` (`name`,`Adress`)
+  VALUES
+    ('Zach','Portland'),
+    ('Annie','NewYork'),
+    ('Taylor','Everett');
+  """
+
+  create_Transactions = """
+  INSERT INTO
+    `Transactions` (`Acc_ID`,`TimeStamp`,`Changes`,`Comment`)
+  VALUES
+    ('1','10/21','10','init_depot1'),
+    ('1','10/22','20','init_depot2'),
+    ('1','10/23','30','init_depot3'),
+    ('3','10/24','40','init_depot4'),
+    ('2','10/25','50','init_depot5');
+  """
+
+
+
+
+#There is a Unique last name, so if a duplicate last name appears, it ignores it and chucks on
   create_persons = """
   INSERT INTO
     `persons` (`ID`, `LastName`, `FirstName`, `Age`)
@@ -113,6 +164,20 @@ if __name__ == '__main__':
 
   test_MYSQL.execute_query(create_users)
   test_MYSQL.execute_query(create_persons)
+
+  test_MYSQL.execute_query(create_Accounts)
+  test_MYSQL.execute_query(create_Transactions)
+
+
+  ## INNER JOIN
+
+  inner_join="""SELECT 
+  transactions.Trans_ID,accounts.Name 
+  FROM transactions 
+  INNER JOIN accounts ON 
+  transactions.Acc_ID=Accounts.Acc_ID"""
+
+  innjoin=test_MYSQL.execute_read_query(inner_join)
 
 
   ## SELECTING RECORDS EXAMPLE
@@ -152,3 +217,5 @@ if __name__ == '__main__':
   )
   data = (3, 'Taylor23', 'Joe3', 34)
   test_MYSQL.user_entry(insert_stmt, data)
+
+  ## Inner Joint Example
