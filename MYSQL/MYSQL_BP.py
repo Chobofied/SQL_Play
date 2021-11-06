@@ -56,7 +56,7 @@ class MYSQL_db():
         print(f"The error '{e}' occurred")
   
 
-def Create_New_Account(MYSQL_DB,Acc_ID,Name,Balances,Address):
+def Create_New_Account(MYSQL_DB,Name,Balances,Address):
   
   ## Creates a new account
   Account_Creation=("INSERT INTO `Accounts` (`name`,`address`) "
@@ -64,14 +64,16 @@ def Create_New_Account(MYSQL_DB,Acc_ID,Name,Balances,Address):
   )
 
   MYSQL_DB.user_entry(Account_Creation,(Name,Address))
+
+  #Look up Account ID from Name
+  MYSQL_DB.user_entry("""SET @ID =(SELECT Acc_ID FROM accounts Where Name=%s)""",(Name,))
+
   
-  
-  initial_deposit = (
-    "INSERT INTO `Transactions` (`Acc_ID`,CURDATE(),`Changes`,`Comment`,`Balances`) "
-    "VALUES (%s, %s, %s,%s)"
-  )
-  insert_data=(Acc_ID,Balances,'Initial Deposit',Balances)
-  MYSQL_DB.user_entry(initial_deposit,insert_data)
+  MYSQL_DB.user_entry("""
+                        INSERT INTO `Transactions` (`Acc_ID`,`TimeStamp`,`Changes`,`Comment`,`Balances`)  
+                        VALUES (@ID, CURDATE(), %s,%s,%s)""",(Balances,'Initial Deposit',Balances))
+
+  #MYSQL_DB.user_entry(initial_deposit,insert_data)
 
 def New_Transaction(MYSQL_DB,Acc_ID,change,comment):
 
@@ -253,7 +255,7 @@ if __name__ == '__main__':
 
 
  ##  New Account Creation 
-  Create_New_Account(test_MYSQL,'4','ZOSU',100,'Bungie')
+  Create_New_Account(test_MYSQL,'ZOSU',100,'Bungie')
 
   ## Transactions Made for new account
   New_Transaction(test_MYSQL,'4',-40,'D2R')
