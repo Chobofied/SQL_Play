@@ -48,10 +48,47 @@ class MYSQL_db():
         print(f"The error '{e}' occurred")
 
   def user_entry(self, insert_stmt,data):
+    try:
       self.cursor.execute(insert_stmt, data)
       self.connection.commit()
       x=4
+    except Error as e:
+        print(f"The error '{e}' occurred")
   
+
+def Create_New_Account(MYSQL_DB,Acc_ID,Name,Balances,Address):
+  
+
+  ## Creates a new account
+  Account_Creation=("INSERT INTO `Accounts` (`name`,`address`) "
+    "VALUES (%s, %s)"
+  )
+  
+  Account_Details=(Name,Address)
+  MYSQL_DB.user_entry(Account_Creation,Account_Details)
+  
+  
+  ## Creates a balance for above account
+  import time
+  # ts stores the time in seconds
+  ts = time.time()
+  initial_deposit = (
+    "INSERT INTO `Transactions` (`Acc_ID`,`TimeStamp`,`Changes`,`Comment`,`Balances`) "
+    "VALUES (%s, %s, %s, %s,%s)"
+  )
+  insert_data=(Acc_ID,ts,0,'Initial Deposit',Balances)
+  MYSQL_DB.user_entry(initial_deposit,insert_data)
+
+def New_Transaction(MYSQL_DB,Acc_ID,change,comment):
+
+
+  # Finds the latest balance and gets the new balance after the change
+  MYSQL_DB.cursor.execute("SET @bal =(SELECT Balances FROM transactions Where Acc_id=%s ORDER BY Trans_ID desc LIMIT 1)+%s",(Acc_ID,change))
+  
+  # Inserts the New Transaction
+  MYSQL_DB.cursor.execute("INSERT INTO `Transactions` (`Acc_ID`,`TimeStamp`,`Changes`,`Comment`,`Balances`)  VALUES (%s, CURDATE(), %s, %s,@bal)",(Acc_ID,change,comment,))
+  MYSQL_DB.connection.commit()
+
 
 
 
@@ -88,7 +125,8 @@ if __name__ == '__main__':
   CREATE TABLE IF NOT EXISTS Accounts (
     Acc_ID INT AUTO_INCREMENT,
     Name varchar(255) NOT NULL,
-    Adress varchar(255),
+    address varchar(255),
+    UNIQUE(Name),
     PRIMARY KEY (Acc_ID)
 ); """
 
@@ -97,13 +135,13 @@ if __name__ == '__main__':
   Trans_ID INT AUTO_INCREMENT,
   Acc_ID INT NOT NULL,
   TimeStamp varchar(255) NOT NULL,
-  Changes INT,
+  Changes FLOAT,
   Comment TEXT,
+  Balances FLOAT,
   PRIMARY KEY (Trans_ID),
   FOREIGN KEY (Acc_ID) REFERENCES Accounts(Acc_ID)
 );
   """
-
 
   test_MYSQL.execute_query(create_users_table)
   test_MYSQL.execute_query(create_persons_table)
@@ -126,11 +164,9 @@ if __name__ == '__main__':
 
   """
 
-
-
   create_Accounts = """
   INSERT INTO
-    `Accounts` (`name`,`Adress`)
+    `Accounts` (`name`,`address`)
   VALUES
     ('Zach','Portland'),
     ('Annie','NewYork'),
@@ -139,19 +175,18 @@ if __name__ == '__main__':
 
   create_Transactions = """
   INSERT INTO
-    `Transactions` (`Acc_ID`,`TimeStamp`,`Changes`,`Comment`)
+    `Transactions` (`Acc_ID`,`TimeStamp`,`Changes`,`Comment`,`Balances`)
   VALUES
-    ('1','10/21','10','init_depot1'),
-    ('1','10/22','20','init_depot2'),
-    ('1','10/23','30','init_depot3'),
-    ('3','10/24','40','init_depot4'),
-    ('2','10/25','50','init_depot5');
+    ('1','10/21','50','init_depot1','50'),
+    ('1','10/22','-40','Diablo2 Pur','10'),
+    ('1','10/23','10','BDay$','20'),
+    ('3','10/24','-20','Horse','-20'),
+    ('2','10/25','20','Payday$','20');
   """
 
 
 
-
-#There is a Unique last name, so if a duplicate last name appears, it ignores it and chucks on
+#There is a Unique last name, so if a duplicate last name appears, it ignores it and chugs on
   create_persons = """
   INSERT INTO
     `persons` (`ID`, `LastName`, `FirstName`, `Age`)
@@ -215,7 +250,20 @@ if __name__ == '__main__':
     "INSERT INTO `persons` (`ID`, `LastName`, `FirstName`,`Age`) "
     "VALUES (%s, %s, %s, %s)"
   )
-  data = (3, 'Taylor23', 'Joe3', 34)
-  test_MYSQL.user_entry(insert_stmt, data)
 
-  ## Inner Joint Example
+  data = (3, 'Taylor23', 'Joe3', 34)
+  ##test_MYSQL.user_entry(insert_stmt, data)
+
+ ## Account Creation
+  Create_New_Account(test_MYSQL,'4','ZOSU',100,'Bungie')
+
+  ## Transactions Made for new account
+  New_Transaction(test_MYSQL,'4',-40,'D2R')
+  New_Transaction(test_MYSQL,'4',80,'PayCheck')
+  New_Transaction(test_MYSQL,'4',-15,'Taco-Bell')
+
+  #Get Statement for New User. Hard Coded here to test out
+  User_Statement="SELECT * FROM transactions Where Acc_ID=4 LIMIT 100"
+  User_Money=test_MYSQL.execute_read_query(User_Statement)
+  
+  print(User_Money)
