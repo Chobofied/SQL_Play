@@ -38,7 +38,7 @@ class MYSQL_db():
 
   # Reads (Fetches) Data from the database
   def execute_read_query(self, query):
-    self.cursor = self.connection.cursor()
+    #self.cursor = self.connection.cursor()
     result = None
     try:
         self.cursor.execute(query)
@@ -82,12 +82,20 @@ def Create_New_Account(MYSQL_DB,Acc_ID,Name,Balances,Address):
 def New_Transaction(MYSQL_DB,Acc_ID,change,comment):
 
 
-  # Finds the latest balance and gets the new balance after the change
-  MYSQL_DB.cursor.execute("SET @bal =(SELECT Balances FROM transactions Where Acc_id=%s ORDER BY Trans_ID desc LIMIT 1)+%s",(Acc_ID,change))
+  #Multi=True
+  # Finds the latest balance and makes account changes to it and assings it to @bal. Then inserts that new balance into the transaction table
+  MYSQL_DB.user_entry("""SET @bal =(SELECT Balances FROM transactions 
+                        Where Acc_id=%s 
+                        ORDER BY Trans_ID desc LIMIT 1)+%s;
+                        """,(Acc_ID,change))
+
+  MYSQL_DB.user_entry("""
+                        INSERT INTO `Transactions` (`Acc_ID`,`TimeStamp`,`Changes`,`Comment`,`Balances`)  
+                        VALUES (%s, CURDATE(), %s, %s,@bal)""",(Acc_ID,change,comment))
   
   # Inserts the New Transaction
-  MYSQL_DB.cursor.execute("INSERT INTO `Transactions` (`Acc_ID`,`TimeStamp`,`Changes`,`Comment`,`Balances`)  VALUES (%s, CURDATE(), %s, %s,@bal)",(Acc_ID,change,comment,))
-  MYSQL_DB.connection.commit()
+  #MYSQL_DB.cursor.execute("INSERT INTO `Transactions` (`Acc_ID`,`TimeStamp`,`Changes`,`Comment`,`Balances`)  VALUES (%s, CURDATE(), %s, %s,@bal)",(Acc_ID,change,comment,))
+  #MYSQL_DB.connection.commit()
 
 
 
@@ -263,7 +271,8 @@ if __name__ == '__main__':
   New_Transaction(test_MYSQL,'4',-15,'Taco-Bell')
 
   #Get Statement for New User. Hard Coded here to test out
-  User_Statement="SELECT * FROM transactions Where Acc_ID=4 LIMIT 100"
-  User_Money=test_MYSQL.execute_read_query(User_Statement)
+  Account_Statement="SELECT * FROM transactions Where Acc_ID=4 ORDER BY Trans_ID desc LIMIT 100"
+  Statement = test_MYSQL.execute_read_query(Account_Statement)
   
-  print(User_Money)
+  print(Statement)
+  x=4
