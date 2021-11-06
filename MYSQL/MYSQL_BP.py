@@ -37,11 +37,11 @@ class MYSQL_db():
         print(f"The error '{e}' occurred")
 
   # Reads (Fetches) Data from the database
-  def execute_read_query(self, query):
+  def execute_read_query(self, query,data=None):
     #self.cursor = self.connection.cursor()
     result = None
     try:
-        self.cursor.execute(query)
+        self.cursor.execute(query,data)
         result = self.cursor.fetchall()
         return result
     except Error as e:
@@ -58,46 +58,34 @@ class MYSQL_db():
 
 def Create_New_Account(MYSQL_DB,Acc_ID,Name,Balances,Address):
   
-
   ## Creates a new account
   Account_Creation=("INSERT INTO `Accounts` (`name`,`address`) "
     "VALUES (%s, %s)"
   )
+
+  MYSQL_DB.user_entry(Account_Creation,(Name,Address))
   
-  Account_Details=(Name,Address)
-  MYSQL_DB.user_entry(Account_Creation,Account_Details)
   
-  
-  ## Creates a balance for above account
-  import time
-  # ts stores the time in seconds
-  ts = time.time()
   initial_deposit = (
-    "INSERT INTO `Transactions` (`Acc_ID`,`TimeStamp`,`Changes`,`Comment`,`Balances`) "
-    "VALUES (%s, %s, %s, %s,%s)"
+    "INSERT INTO `Transactions` (`Acc_ID`,CURDATE(),`Changes`,`Comment`,`Balances`) "
+    "VALUES (%s, %s, %s,%s)"
   )
-  insert_data=(Acc_ID,ts,0,'Initial Deposit',Balances)
+  insert_data=(Acc_ID,Balances,'Initial Deposit',Balances)
   MYSQL_DB.user_entry(initial_deposit,insert_data)
 
 def New_Transaction(MYSQL_DB,Acc_ID,change,comment):
 
-
-  #Multi=True
-  # Finds the latest balance and makes account changes to it and assings it to @bal. Then inserts that new balance into the transaction table
+  # Finds the latest balance and makes account changes to it and assings it to @bal. 
   MYSQL_DB.user_entry("""SET @bal =(SELECT Balances FROM transactions 
                         Where Acc_id=%s 
                         ORDER BY Trans_ID desc LIMIT 1)+%s;
                         """,(Acc_ID,change))
 
+ # Inserts that new balance into the transaction table
   MYSQL_DB.user_entry("""
                         INSERT INTO `Transactions` (`Acc_ID`,`TimeStamp`,`Changes`,`Comment`,`Balances`)  
                         VALUES (%s, CURDATE(), %s, %s,@bal)""",(Acc_ID,change,comment))
   
-  # Inserts the New Transaction
-  #MYSQL_DB.cursor.execute("INSERT INTO `Transactions` (`Acc_ID`,`TimeStamp`,`Changes`,`Comment`,`Balances`)  VALUES (%s, CURDATE(), %s, %s,@bal)",(Acc_ID,change,comment,))
-  #MYSQL_DB.connection.commit()
-
-
 
 
 ### EXAMPLE CONNECTION AND SELECTING DATA
@@ -105,6 +93,8 @@ if __name__ == '__main__':
 
   # Get Environmental variables. Password is saved in .env file
   MYSQL_PASSWORD=os.environ.get('MYSQL_PASSWORD')
+
+  #Establish Connection to MYSQL
   test_MYSQL=MYSQL_db("localhost", "root", MYSQL_PASSWORD,"sm_app")
 
 
@@ -252,7 +242,7 @@ if __name__ == '__main__':
   test_MYSQL.execute_query(Delete_Person)
 
 
-  ## SAFE ENTRY
+  ## SAFE USER ENTRY EXAMPLE
 
   insert_stmt = (
     "INSERT INTO `persons` (`ID`, `LastName`, `FirstName`,`Age`) "
@@ -260,9 +250,9 @@ if __name__ == '__main__':
   )
 
   data = (3, 'Taylor23', 'Joe3', 34)
-  ##test_MYSQL.user_entry(insert_stmt, data)
 
- ## Account Creation
+
+ ##  New Account Creation 
   Create_New_Account(test_MYSQL,'4','ZOSU',100,'Bungie')
 
   ## Transactions Made for new account
@@ -270,9 +260,11 @@ if __name__ == '__main__':
   New_Transaction(test_MYSQL,'4',80,'PayCheck')
   New_Transaction(test_MYSQL,'4',-15,'Taco-Bell')
 
-  #Get Statement for New User. Hard Coded here to test out
-  Account_Statement="SELECT * FROM transactions Where Acc_ID=4 ORDER BY Trans_ID desc LIMIT 100"
-  Statement = test_MYSQL.execute_read_query(Account_Statement)
-  
+  #Get Account Data for selected User
+  Account='ZOSU'
+  Statement = test_MYSQL.execute_read_query("""SELECT * FROM transactions 
+                      Where Acc_ID=(SELECT Acc_ID FROM accounts Where Name=%s) 
+                      ORDER BY Trans_ID desc LIMIT 100""",(Account,))
+
   print(Statement)
   x=4
