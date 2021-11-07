@@ -65,28 +65,32 @@ def Create_New_Account(MYSQL_DB,Name,Balances,Address):
 
   MYSQL_DB.user_entry(Account_Creation,(Name,Address))
 
+
   #Look up Account ID from Name
   MYSQL_DB.user_entry("""SET @ID =(SELECT Acc_ID FROM accounts Where Name=%s)""",(Name,))
 
-  
+  #Creates an initial Transaction for Bank Account  
   MYSQL_DB.user_entry("""
                         INSERT INTO `Transactions` (`Acc_ID`,`TimeStamp`,`Changes`,`Comment`,`Balances`)  
                         VALUES (@ID, CURDATE(), %s,%s,%s)""",(Balances,'Initial Deposit',Balances))
 
   #MYSQL_DB.user_entry(initial_deposit,insert_data)
 
-def New_Transaction(MYSQL_DB,Acc_ID,change,comment):
+def New_Transaction(MYSQL_DB,Account_Name,change,comment):
+
+   #Look up Account ID from Name
+  MYSQL_DB.user_entry("""SET @ID =(SELECT Acc_ID FROM accounts Where Name=%s)""",(Account_Name,))
 
   # Finds the latest balance and makes account changes to it and assings it to @bal. 
   MYSQL_DB.user_entry("""SET @bal =(SELECT Balances FROM transactions 
-                        Where Acc_id=%s 
+                        Where Acc_id=@ID 
                         ORDER BY Trans_ID desc LIMIT 1)+%s;
-                        """,(Acc_ID,change))
+                        """,(change,))
 
  # Inserts that new balance into the transaction table
   MYSQL_DB.user_entry("""
                         INSERT INTO `Transactions` (`Acc_ID`,`TimeStamp`,`Changes`,`Comment`,`Balances`)  
-                        VALUES (%s, CURDATE(), %s, %s,@bal)""",(Acc_ID,change,comment))
+                        VALUES (@ID, CURDATE(), %s, %s,@bal)""",(change,comment))
   
 
 
@@ -258,9 +262,10 @@ if __name__ == '__main__':
   Create_New_Account(test_MYSQL,'ZOSU',100,'Bungie')
 
   ## Transactions Made for new account
-  New_Transaction(test_MYSQL,'4',-40,'D2R')
-  New_Transaction(test_MYSQL,'4',80,'PayCheck')
-  New_Transaction(test_MYSQL,'4',-15,'Taco-Bell')
+  New_Transaction(test_MYSQL,'ZOSU',-40,'D2R')
+  New_Transaction(test_MYSQL,'ZOSU',80,'PayCheck')
+  New_Transaction(test_MYSQL,'ZOSU',-15,'Taco-Bell')
+  New_Transaction(test_MYSQL,'Taylor',1015,'Bonsu')
 
   #Get Account Data for selected User
   Account='ZOSU'
