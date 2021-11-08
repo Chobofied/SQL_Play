@@ -1,166 +1,102 @@
-#https://realpython.com/python-sql-libraries/#creating-tables
+from MYSQL_BP import MYSQL_db
+
+def Establish_Connection(MYSQL_PASSWORD):
+  Bank_MYSQL=MYSQL_db("localhost", "root", MYSQL_PASSWORD,"bank_sim")
+  return Bank_MYSQL
+
+def Create_Accounts_Table():
+
+  create_accounts_table="""
+  CREATE TABLE IF NOT EXISTS Accounts (
+    Acc_ID INT AUTO_INCREMENT,
+    Name varchar(255) NOT NULL,
+    address varchar(255),
+    UNIQUE(Name),
+    PRIMARY KEY (Acc_ID)
+); """
 
 
-import mysql.connector
-from mysql.connector import Error
-import os
-
-
-from dotenv import load_dotenv
-load_dotenv()
-
-
-
-class MYSQL_db():
-
-  #Establishes a connection to the SQLite DB
-  def __init__(self,host_name, user_name, MYSQL_PASSWORD, db_name):
-    self.connection = None
-    try:
-        self.connection = mysql.connector.connect(
-            host=host_name,
-            user=user_name,
-            passwd=MYSQL_PASSWORD,
-            database=db_name
-        )
-        self.cursor = self.connection.cursor()
-        print("Connection to MySQL DB successful")
-    except Error as e:
-        print(f"The error '{e}' occurred")
+  Bank_MYSQL.execute_query(create_accounts_table)
   
-  # Posts data to the Database
-  def execute_query(self, query):
-    self.cursor = self.connection.cursor()
-    try:
-        self.cursor.execute(query)
-        self.connection.commit()
-        print("Query executed successfully")
-    except Error as e:
-        print(f"The error '{e}' occurred")
 
-  # Reads (Fetches) Data from the database
-  def execute_read_query(self, query):
-    self.cursor = self.connection.cursor()
-    result = None
-    try:
-        self.cursor.execute(query)
-        result = self.cursor.fetchall()
-        return result
-    except Error as e:
-        print(f"The error '{e}' occurred")
+def Create_Transaction_Table():
 
-  def user_entry(self, insert_stmt,data):
-      self.cursor.execute(insert_stmt, data)
-      self.connection.commit()
-      x=4
+  create_transaction_table="""
+  CREATE TABLE IF NOT EXISTS Transactions (
+  Trans_ID INT AUTO_INCREMENT,
+  Acc_ID INT NOT NULL,
+  Date varchar(255) NOT NULL,
+  TimeStamp varchar(255) NOT NULL,
+  Changes FLOAT,
+  Comment TEXT,
+  Balances FLOAT,
+  PRIMARY KEY (Trans_ID),
+  FOREIGN KEY (Acc_ID) REFERENCES Accounts(Acc_ID)
+);
+  """
+
+  Bank_MYSQL.execute_query(create_transaction_table)
+
+def Create_New_Account(MYSQL_DB,Name,Balances,Address):
   
+  ## Creates a new account
+  Account_Creation=("INSERT INTO `Accounts` (`name`,`address`) "
+    "VALUES (%s, %s)"
+  )
+
+  MYSQL_DB.execute_query(Account_Creation,(Name,Address))
+
+  #Look up Account ID from Name
+  MYSQL_DB.execute_query("""SET @ID =(SELECT Acc_ID FROM accounts Where Name=%s)""",(Name,))
+
+  #Creates an initial Transaction for Bank Account  
+  MYSQL_DB.execute_query("""
+                        INSERT INTO `Transactions` (`Acc_ID`,`Date`,`TimeStamp`,`Changes`,`Comment`,`Balances`)  
+                        VALUES (@ID, CURDATE(),NOW(), %s,%s,%s)""",(Balances,'Initial Deposit',Balances))
+
+  #MYSQL_DB.user_entry(initial_deposit,insert_data)
+
+def New_Transaction(MYSQL_DB,Account_Name,change,comment):
+
+   #Look up Account ID from Name
+  MYSQL_DB.execute_query("""SET @ID =(SELECT Acc_ID FROM accounts Where Name=%s)""",(Account_Name,))
+
+  # Finds the latest balance and makes account changes to it and assings it to @bal. 
+  MYSQL_DB.execute_query("""SET @bal =(SELECT Balances FROM transactions 
+                        Where Acc_id=@ID 
+                        ORDER BY Trans_ID desc LIMIT 1)+%s;
+                        """,(change,))
+
+ # Inserts that new balance into the transaction table
+  MYSQL_DB.execute_query("""
+                        INSERT INTO `Transactions` (`Acc_ID`,`Date`,`TimeStamp`,`Changes`,`Comment`,`Balances`)  
+                        VALUES (@ID, CURDATE(),NOW(), %s, %s,@bal)""",(change,comment))
+
 
 ### EXAMPLE CONNECTION AND SELECTING DATA
+if __name__ == '__main__':
 
-# Get Environmental variables
-MYSQL_PASSWORD=os.environ.get('MYSQL_PASSWORD')
-test_MYSQL=MYSQL_db("localhost", "root", MYSQL_PASSWORD,"Bank_Sim")
+  #Gets Environmental Variables
+  import os
+  from dotenv import load_dotenv
+  load_dotenv()
 
+  # Get Environmental variables. Password is saved in .env file
+  MYSQL_PASSWORD=os.environ.get('MYSQL_PASSWORD')
 
-## MAKE A TABLE EXAMPLE
-
-## HAVE TO WORK ON CREATING NEW TABLES FOR NEW ACCOUNTS, NOT QUITE SURE HOW TO DO THAT YET, %s sends a '' text, so it doesnt work all teh way
-
-## HAVE STATIC TABLE NAME SUCH AS "ACCOUNT_***", and *** IS SOMETHING LIKE .FORMAT ACCOUNT NUMBER TAKEN FROM THE PRIMARY TABLE WITH ACCOUNT NUMBERS
-
-
-create_users_table1 = """
-CREATE TABLE IF NOT EXISTS users2 (
-  id INT AUTO_INCREMENT, 
-  name TEXT NOT NULL, 
-  age INT, 
-  gender TEXT, 
-  nationality TEXT,
-  PRIMARY KEY (id)
-) ENGINE = InnoDB
-"""
-
-create_users_table = """
-CREATE TABLE IF NOT EXISTS %s (
-  id INT AUTO_INCREMENT, 
-  name TEXT NOT NULL, 
-  age INT, 
-  gender TEXT, 
-  nationality TEXT,
-  PRIMARY KEY (id)
-) ENGINE = InnoDB
-"""
-
-create_persons_table="""CREATE TABLE IF NOT EXISTS Persons (
-    ID int NOT NULL,
-    LastName varchar(255) NOT NULL,
-    FirstName varchar(255),
-    Age int,
-    UNIQUE (LastName)
-);"""
-Test_Account='Test_Account'
-data = [Test_Account]
-
-test_MYSQL.execute_query(create_users_table1)
-
-test_MYSQL.user_entry(create_users_table,data)
-test_MYSQL.execute_query(create_persons_table)
-
-## INSERTING RECORDS EXAMPLE
-
-create_users = """
-INSERT INTO
-  `users` (`name`, `age`, `gender`, `nationality`)
-VALUES
-  ('James', 101, 'male', 'USA'),
-  ('Leila', 32, 'female', 'France'),
-  ('Brigitte', 35, 'female', 'England'),
-  ('Mike', 40, 'male', 'Denmark'),
-  ('Elizabeth', 21, 'female', 'Canada');
-"""
+  #Establish Connection to MYSQL
+  Bank_MYSQL=Establish_Connection(MYSQL_PASSWORD)
+  Create_Accounts_Table()
+  Create_Transaction_Table()
 
 
+  Create_New_Account(Bank_MYSQL,'ZOSU',100,'Bungie')
 
-create_persons = """
-INSERT INTO
-  `persons` (`ID`, `LastName`, `FirstName`, `Age`)
-VALUES
-  (1, 'Taylor', 'Joe', 31),
-  (2, 'Taylor2', 'Joe', 33);
-"""
+  ## Transactions Made for new account
+  New_Transaction(Bank_MYSQL,'ZOSU',-40,'D2R')
+  New_Transaction(Bank_MYSQL,'ZOSU',80,'PayCheck')
+  New_Transaction(Bank_MYSQL,'ZOSU',-15,'Taco-Bell')
+  
 
-#"INSERT INTO `persons` (`ID`, `LastName`, `FirstName`,`Age`) VALUES (3, 'Taylor23', 'Joe3', 34)"
-
-#test_MYSQL.user_entry(create_users)
-
-
-test_MYSQL.execute_query(create_persons)
-
-
-## SELECTING RECORDS EXAMPLE
-
-
-select_users = "SELECT * FROM users"
-users = test_MYSQL.execute_read_query(select_users)
-
-for user in users:
-    print(user)
-
-## DELETE RECORD
-
-Delete_Person="""
- DELETE FROM persons 
- WHERE LastName in ('Taylor2')"""
-
-test_MYSQL.execute_query(Delete_Person)
-
-x=5
-
-## SAFE ENTRY
-
-insert_stmt = (
-  "INSERT INTO `persons` (`ID`, `LastName`, `FirstName`,`Age`) "
-  "VALUES (%s, %s, %s, %s)"
-)
-data = (3, 'Taylor23', 'Joe3', 34)
-test_MYSQL.user_entry(insert_stmt, data)
+  Create_New_Account(Bank_MYSQL,'Taylor',200,'Everett')
+  New_Transaction(Bank_MYSQL,'Taylor',-57,'Destiny2 Purchase')

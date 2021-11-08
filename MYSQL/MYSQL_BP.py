@@ -1,13 +1,7 @@
 #https://realpython.com/python-sql-libraries/#creating-tables
 
-
 import mysql.connector
 from mysql.connector import Error
-import os
-
-#Gets Environmental Variables
-from dotenv import load_dotenv
-load_dotenv()
 
 
 class MYSQL_db():
@@ -27,10 +21,10 @@ class MYSQL_db():
         print(f"The error '{e}' occurred")
   
   # Posts data to the Database
-  def execute_query(self, query):
+  def execute_query(self, query,data=None):
     self.cursor = self.connection.cursor()
     try:
-        self.cursor.execute(query)
+        self.cursor.execute(query,data)
         self.connection.commit()
         print("Query executed successfully")
     except Error as e:
@@ -47,13 +41,7 @@ class MYSQL_db():
     except Error as e:
         print(f"The error '{e}' occurred")
 
-  def user_entry(self, insert_stmt,data):
-    try:
-      self.cursor.execute(insert_stmt, data)
-      self.connection.commit()
-      x=4
-    except Error as e:
-        print(f"The error '{e}' occurred")
+
   
 
 def Create_New_Account(MYSQL_DB,Name,Balances,Address):
@@ -63,39 +51,44 @@ def Create_New_Account(MYSQL_DB,Name,Balances,Address):
     "VALUES (%s, %s)"
   )
 
-  MYSQL_DB.user_entry(Account_Creation,(Name,Address))
+  MYSQL_DB.execute_query(Account_Creation,(Name,Address))
 
 
   #Look up Account ID from Name
-  MYSQL_DB.user_entry("""SET @ID =(SELECT Acc_ID FROM accounts Where Name=%s)""",(Name,))
+  MYSQL_DB.execute_query("""SET @ID =(SELECT Acc_ID FROM accounts Where Name=%s)""",(Name,))
 
   #Creates an initial Transaction for Bank Account  
-  MYSQL_DB.user_entry("""
-                        INSERT INTO `Transactions` (`Acc_ID`,`TimeStamp`,`Changes`,`Comment`,`Balances`)  
-                        VALUES (@ID, CURDATE(), %s,%s,%s)""",(Balances,'Initial Deposit',Balances))
+  MYSQL_DB.execute_query("""
+                        INSERT INTO `Transactions` (`Acc_ID`,`Date`,`TimeStamp`,`Changes`,`Comment`,`Balances`)  
+                        VALUES (@ID, CURDATE(),NOW(), %s,%s,%s)""",(Balances,'Initial Deposit',Balances))
 
   #MYSQL_DB.user_entry(initial_deposit,insert_data)
 
 def New_Transaction(MYSQL_DB,Account_Name,change,comment):
 
    #Look up Account ID from Name
-  MYSQL_DB.user_entry("""SET @ID =(SELECT Acc_ID FROM accounts Where Name=%s)""",(Account_Name,))
+  MYSQL_DB.execute_query("""SET @ID =(SELECT Acc_ID FROM accounts Where Name=%s)""",(Account_Name,))
 
   # Finds the latest balance and makes account changes to it and assings it to @bal. 
-  MYSQL_DB.user_entry("""SET @bal =(SELECT Balances FROM transactions 
+  MYSQL_DB.execute_query("""SET @bal =(SELECT Balances FROM transactions 
                         Where Acc_id=@ID 
                         ORDER BY Trans_ID desc LIMIT 1)+%s;
                         """,(change,))
 
  # Inserts that new balance into the transaction table
-  MYSQL_DB.user_entry("""
-                        INSERT INTO `Transactions` (`Acc_ID`,`TimeStamp`,`Changes`,`Comment`,`Balances`)  
-                        VALUES (@ID, CURDATE(), %s, %s,@bal)""",(change,comment))
+  MYSQL_DB.execute_query("""
+                        INSERT INTO `Transactions` (`Acc_ID`,`Date`,`TimeStamp`,`Changes`,`Comment`,`Balances`)  
+                        VALUES (@ID, CURDATE(),NOW(), %s, %s,@bal)""",(change,comment))
   
 
 
 ### EXAMPLE CONNECTION AND SELECTING DATA
 if __name__ == '__main__':
+
+  #Gets Environmental Variables
+  import os
+  from dotenv import load_dotenv
+  load_dotenv()
 
   # Get Environmental variables. Password is saved in .env file
   MYSQL_PASSWORD=os.environ.get('MYSQL_PASSWORD')
@@ -138,6 +131,7 @@ if __name__ == '__main__':
   CREATE TABLE IF NOT EXISTS Transactions (
   Trans_ID INT AUTO_INCREMENT,
   Acc_ID INT NOT NULL,
+  Date varchar(255) NOT NULL,
   TimeStamp varchar(255) NOT NULL,
   Changes FLOAT,
   Comment TEXT,
@@ -179,13 +173,13 @@ if __name__ == '__main__':
 
   create_Transactions = """
   INSERT INTO
-    `Transactions` (`Acc_ID`,`TimeStamp`,`Changes`,`Comment`,`Balances`)
+    `Transactions` (`Acc_ID`,`Date`,`TimeStamp`,`Changes`,`Comment`,`Balances`)
   VALUES
-    ('1','10/21','50','init_depot1','50'),
-    ('1','10/22','-40','Diablo2 Pur','10'),
-    ('1','10/23','10','BDay$','20'),
-    ('3','10/24','-20','Horse','-20'),
-    ('2','10/25','20','Payday$','20');
+    ('1',NOW(),'10/21','50','init_depot1','50'),
+    ('1',NOW(),'10/22','-40','Diablo2 Pur','10'),
+    ('1',NOW(),'10/23','10','BDay$','20'),
+    ('3',NOW(),'10/24','-20','Horse','-20'),
+    ('2',NOW(),'10/25','20','Payday$','20');
   """
 
 
