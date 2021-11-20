@@ -100,3 +100,11 @@ if __name__ == '__main__':
 
   Create_New_Account(Bank_MYSQL,'Taylor',200,'Everett')
   New_Transaction(Bank_MYSQL,'Taylor',-57,'Destiny2 Purchase')
+
+  ####Command Line Example
+  """
+  Python
+  DB=Main.Establish_Connection('DB_PASSWORD')
+  Main.Create_New_Account(DB,'Test_Account',500,'Nowhere')
+  """
+

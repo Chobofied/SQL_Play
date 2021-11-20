@@ -16,13 +16,14 @@ class MYSQL_db():
             passwd=MYSQL_PASSWORD,
             database=db_name
         )
+        self.cursor = self.connection.cursor()
         print("Connection to MySQL DB successful")
     except Error as e:
         print(f"The error '{e}' occurred")
   
   # Posts data to the Database
   def execute_query(self, query,data=None):
-    self.cursor = self.connection.cursor()
+  
     try:
         self.cursor.execute(query,data)
         self.connection.commit()
@@ -32,7 +33,7 @@ class MYSQL_db():
 
   # Reads (Fetches) Data from the database
   def execute_read_query(self, query,data=None):
-    #self.cursor = self.connection.cursor()
+   
     result = None
     try:
         self.cursor.execute(query,data)
@@ -94,7 +95,7 @@ if __name__ == '__main__':
   MYSQL_PASSWORD=os.environ.get('MYSQL_PASSWORD')
 
   #Establish Connection to MYSQL
-  test_MYSQL=MYSQL_db("localhost", "root", MYSQL_PASSWORD,"sm_app")
+  test_MYSQL=MYSQL_db("localhost", "root", MYSQL_PASSWORD,"bank_sim")
 
 
   ## MAKE A TABLE EXAMPLE
